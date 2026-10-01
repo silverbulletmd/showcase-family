@@ -7,76 +7,159 @@ family = {}
 
 -- Widget links open pages through editor.navigate, so they work wherever the space is served
 local function go(ref)
-  return function() editor.navigate(ref) end
+  return function()
+    editor.navigate(ref)
+  end
 end
 
 local function avatar(handle)
-  return dom.span { class = "fam-avatar fam-" .. handle, handle:sub(1, 1):upper() }
+  return dom.span {
+    class = "fam-avatar fam-" .. handle,
+    handle:sub(1, 1):upper(),
+  }
 end
 
 -- The fridge door: a note with everyone’s faces, and one saying what’s for dinner tonight
 function family.header()
-  local people = query[[from p = index.contentPages "person" order by p.name select p.handle]]
+  local handles = query[[
+    from p = index.contentPages "person"
+    order by p.name
+    select p.handle
+  ]]
   local faces = {}
-  for _, h in ipairs(people) do table.insert(faces, avatar(h)) end
+  for _, handle in ipairs(handles) do
+    table.insert(faces, avatar(handle))
+  end
   local today = os.date "%a"
-  local meals = query[[from m = index.items "meal" where m.day == today select m]]
+  local meals = query[[
+    from m = index.items "meal"
+    where m.day == today
+    select m
+  ]]
   local tonight = meals[1]
   return widget.htmlBlock(dom.div {
     class = "fam fam-header",
     dom.div {
       class = "fam-note fam-title",
-      dom.h1 { "The Bakers" }, dom.p { "Meals, shopping, chores and plans." }, dom.div { class = "fam-faces", table.unpack(faces) },
+      dom.h1 { "The Bakers" },
+      dom.p { "Meals, shopping, chores and plans." },
+      dom.div {
+        class = "fam-faces",
+        table.unpack(faces),
+      },
     },
     tonight and dom.div {
       class = "fam-note fam-tonight",
-      dom.span { "Tonight" }, dom.strong { tonight.name }, dom.span { "cooking: ", tonight.cook },
+      dom.span { "Tonight" },
+      dom.strong { tonight.name },
+      dom.span { "cooking: ", tonight.cook },
     } or nil,
   })
 end
 
+local DAYS = {
+  Mon = 1,
+  Tue = 2,
+  Wed = 3,
+  Thu = 4,
+  Fri = 5,
+  Sat = 6,
+  Sun = 7,
+}
+
 function family.meals()
-  local meals = query[[from m = index.items "meal" select m]]
-  local order = { Mon = 1, Tue = 2, Wed = 3, Thu = 4, Fri = 5, Sat = 6, Sun = 7 }
-  table.sort(meals, function(a, b) return order[a.day] < order[b.day] end)
+  local meals = query[[
+    from m = index.items "meal"
+    select m
+  ]]
+  table.sort(meals, function(a, b)
+    return DAYS[a.day] < DAYS[b.day]
+  end)
   local today = os.date "%a"
   local cards = {}
   for _, m in ipairs(meals) do
     table.insert(cards, dom.div {
       class = m.day == today and "fam-meal fam-today" or "fam-meal",
-      dom.div { class = "fam-day", m.day }, dom.div { class = "fam-dish", m.name }, dom.div { class = "fam-cook", m.cook },
+      dom.div { class = "fam-day", m.day },
+      dom.div { class = "fam-dish", m.name },
+      dom.div { class = "fam-cook", m.cook },
     })
   end
-  return widget.htmlBlock(dom.div { class = "fam fam-meals", table.unpack(cards) })
+  return widget.htmlBlock(dom.div {
+    class = "fam fam-meals",
+    table.unpack(cards),
+  })
 end
 
 function family.chores()
-  local people = query[[from p = index.contentPages "person" order by p.name select p]]
-  local chores = query[[from t = index.tasks() where t.page == "Chores" and not t.done select t]]
+  local people = query[[
+    from p = index.contentPages "person"
+    order by p.name
+    select p
+  ]]
+  local chores = query[[
+    from t = index.tasks()
+    where t.page == "Chores" and not t.done
+    select t
+  ]]
   local rows = {}
   for _, p in ipairs(people) do
     local mine = {}
     for _, t in ipairs(chores) do
       if t.text:find("@" .. p.handle, 1, true) then
-        if #mine > 0 then table.insert(mine, ", ") end
-        table.insert(mine, dom.a { onclick = go(t.ref), (t.text:gsub("@%w+ ", "")) })
+        if #mine > 0 then
+          table.insert(mine, ", ")
+        end
+        table.insert(mine, dom.a {
+          onclick = go(t.ref),
+          (t.text:gsub("@%w+ ", "")),
+        })
       end
     end
-    if #mine == 0 then mine = { "all done ✓" } end
-    table.insert(rows, dom.div { class = "fam-chore", avatar(p.handle), dom.span { table.unpack(mine) } })
+    if #mine == 0 then
+      mine = { "all done ✓" }
+    end
+    table.insert(rows, dom.div {
+      class = "fam-chore",
+      avatar(p.handle),
+      dom.span { table.unpack(mine) },
+    })
   end
-  return widget.htmlBlock(dom.div { class = "fam fam-chores", table.unpack(rows) })
+  return widget.htmlBlock(dom.div {
+    class = "fam fam-chores",
+    table.unpack(rows),
+  })
 end
 
 function family.events()
-  local events = query[[from e = index.items "event" order by e.date select e]]
+  local events = query[[
+    from e = index.items "event"
+    order by e.date
+    select e
+  ]]
   local rows = {}
   for _, e in ipairs(events) do
     local y, m, d = e.date:match "(%d+)-(%d+)-(%d+)"
-    local t = os.time { year = tonumber(y), month = tonumber(m), day = tonumber(d), hour = 12 }
-    table.insert(rows, dom.div { class = "fam-event", dom.div { class = "fam-date", dom.span { os.date("%b", t) }, dom.strong { tostring(tonumber(d)) } }, dom.span { e.name } })
+    local time = os.time {
+      year = tonumber(y),
+      month = tonumber(m),
+      day = tonumber(d),
+      hour = 12,
+    }
+    table.insert(rows, dom.div {
+      class = "fam-event",
+      dom.div {
+        class = "fam-date",
+        dom.span { os.date("%b", time) },
+        dom.strong { tostring(tonumber(d)) },
+      },
+      dom.span { e.name },
+    })
   end
-  return widget.htmlBlock(dom.div { class = "fam fam-events", table.unpack(rows) })
+  return widget.htmlBlock(dom.div {
+    class = "fam fam-events",
+    table.unpack(rows),
+  })
 end
 ```
 
