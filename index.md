@@ -6,7 +6,9 @@ ${family.meals()}
 
 # Shopping list
 * [ ] Milk
-* [ ] Lasagne sheets
+* [ ] Mushrooms
+* [ ] Risotto rice
+* [ ] Mozzarella
 * [ ] Apples
 * [ ] Toothpaste
 * [x] Bread
