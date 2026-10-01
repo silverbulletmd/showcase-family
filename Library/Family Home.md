@@ -5,6 +5,11 @@ The Bakers’ home page: who’s cooking, whose chores are left and what’s com
 ```space-lua
 family = {}
 
+-- Widget links open pages through editor.navigate, so they work wherever the space is served
+local function go(ref)
+  return function() editor.navigate(ref) end
+end
+
 local function avatar(handle)
   return dom.span { class = "fam-avatar fam-" .. handle, handle:sub(1, 1):upper() }
 end
@@ -54,7 +59,7 @@ function family.chores()
     for _, t in ipairs(chores) do
       if t.text:find("@" .. p.handle, 1, true) then
         if #mine > 0 then table.insert(mine, ", ") end
-        table.insert(mine, dom.a { href = "/" .. t.ref, (t.text:gsub("@%w+ ", "")) })
+        table.insert(mine, dom.a { onclick = go(t.ref), (t.text:gsub("@%w+ ", "")) })
       end
     end
     if #mine == 0 then mine = { "all done ✓" } end
@@ -298,5 +303,10 @@ html[data-theme="light"]:root {
 }
 .fam-date strong {
   font-size: 1.2em;
+}
+
+/* Widget links navigate on click, so give them a pointer */
+.fam a {
+  cursor: pointer;
 }
 ```
