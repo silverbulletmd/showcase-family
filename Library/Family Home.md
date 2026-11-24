@@ -168,9 +168,9 @@ end
   background: none !important;
 }
 
-/* Notes on the fridge: soft paper cards */
+/* Notes on the fridge: cards on a faint wash of the accent */
 .fam {
-  --fam-card: color-mix(in srgb, var(--root-background-color), white 55%);
+  --fam-card: var(--ui-accent-surface-color);
 }
 .fam-note,
 .fam-meal,
